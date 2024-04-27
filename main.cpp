@@ -193,6 +193,7 @@ int main() {
   sf::View render_view{
       sf::FloatRect{0.0f, 0.0f, static_cast<float>(config::render_width),
                     static_cast<float>(config::render_height)}};
+  sf::Vector2f original_center{render_view.getCenter()};
 
   sf::View window_view{
       sf::FloatRect{0.0f, 0.0f, static_cast<float>(config::window_width),
@@ -232,7 +233,6 @@ int main() {
               config::player_velocity};
   sf::RectangleShape ship_render_rect{
       sf::Vector2f{config::player_width, config::player_height}};
-  ship.texture.loadFromFile("ship.png");
   ship_render_rect.setFillColor(sf::Color{config::color_palette::blue});
 
   sf::RectangleShape ceiling{sf::Vector2f{
@@ -254,6 +254,28 @@ int main() {
   ParticleSystem thruster = ParticleSystem::create(
       sf::Vector2f{ship.x, ship.y}, 500, sf::Color{0x7DC7FFFF}, true);
 
+  float radius{30.0f};
+  float random_angle{rng::f32(0.0f, 360.0f)};
+
+  auto restart = [&]() {
+    theta = 0;
+    score = 0;
+    ship.is_dead(false);
+    game_start = false;
+    spikes.clear();
+    ship.x = config::render_width / 2 - config::player_width / 2;
+    ship.y = config::render_height / 2 - config::player_height / 2;
+    spikes.clear();
+    config::spike_velocity = 0.0f;
+    radius = 30.0f;
+    elapsed_ms = 0;
+    ceiling.setPosition(
+        sf::Vector2f{0.0f - config::render_width, 0 - config::gap * 9});
+    floor.setPosition(sf::Vector2f{0.0f - config::render_width,
+                                   config::render_height - config::gap});
+    render_view.setCenter(original_center);
+  };
+
   while (window.isOpen()) {
     if (score >= 0) {
       text.setString(std::to_string(static_cast<uint32_t>(score)));
@@ -271,6 +293,8 @@ int main() {
       if (sf::Keyboard::isKeyPressed(sf::Keyboard::Space) && !space_held) {
         if (!ship.is_dead())
           game_start = true;
+        if (ship.is_dead() && !config::spike_velocity)
+          restart();
         ship.delta_y = -ship.delta_y;
         space_held = true;
       }
@@ -364,12 +388,8 @@ int main() {
       thruster.update(delta_ms);
       thruster.set_position(sf::Vector2f{ship.x, ship.y});
     } else {
-      static float radius{30.0f};
-      static float random_angle{rng::f32(0.0f, 360.0f)};
-      static sf::Vector2f original_center{render_view.getCenter()};
-      static sf::Vector2f offset{
-          static_cast<float>(std::sin(random_angle) * radius),
-          static_cast<float>(std::cos(random_angle) * radius)};
+      sf::Vector2f offset{static_cast<float>(std::sin(random_angle) * radius),
+                          static_cast<float>(std::cos(random_angle) * radius)};
       if (radius > 1.0f) {
         radius *= 0.8f;
         random_angle = rng::f32(0.0f, 360.0f);
