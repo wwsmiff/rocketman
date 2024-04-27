@@ -9,4 +9,4 @@ EXE="rocketman"
 SRC="main.cpp random.cpp"
 INCLUDEDIR=""
 
-$CC $CFLAGS $EXE $SRC $LFLAGS
+$CC $CFLAGS $SRC -o $EXE $LFLAGS
